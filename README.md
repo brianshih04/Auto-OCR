@@ -20,8 +20,8 @@
 
 ### 1. 複製專案
 ```bash
-git clone https://github.com/brianshih04/OCR-Folder.git
-cd OCR-Folder
+git clone https://github.com/brianshih04/Auto-OCR.git
+cd Auto-OCR
 ```
 
 ### 2. 建立虛擬環境
