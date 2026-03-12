@@ -11,6 +11,7 @@ from typing import Optional
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QButtonGroup,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -19,6 +20,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QRadioButton,
     QScrollArea,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -82,29 +84,81 @@ class MainWindow(QMainWindow):
     
     def _setup_ui(self) -> None:
         """建立所有 UI 元件"""
-        # 建立中央元件和捲動區域
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(16, 16, 16, 16)
-        main_layout.setSpacing(16)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         
-        # 建立各個面板
-        self._setup_engine_group(main_layout)
-        self._setup_folder_group(main_layout)
-        self._setup_output_group(main_layout)
-        self._setup_control_group(main_layout)
-        self._setup_log_group(main_layout)
+        # 建立分頁元件
+        self._tab_widget = QTabWidget()
+        self._tab_widget.setDocumentMode(True)
+        main_layout.addWidget(self._tab_widget)
+        
+        # 建立各個分頁
+        self._setup_monitor_tab()
+        self._setup_settings_tab()
+        self._setup_log_tab()
+    
+    def _setup_monitor_tab(self) -> None:
+        """建立監控主頁分頁"""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(20)
+        
+        # 控制與進度區
+        self._setup_control_group(layout)
+        
+        # 當前狀態卡片 (可選，這裡先放進度面板)
+        layout.addStretch()
+        
+        self._tab_widget.addTab(tab, "🏠 監控主頁")
+    
+    def _setup_settings_tab(self) -> None:
+        """建立設定分頁"""
+        tab = QWidget()
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(16)
+        
+        self._setup_engine_group(layout)
+        self._setup_folder_group(layout)
+        self._setup_output_group(layout)
+        layout.addStretch()
+        
+        scroll.setWidget(content)
+        
+        tab_layout = QVBoxLayout(tab)
+        tab_layout.setContentsMargins(0, 0, 0, 0)
+        tab_layout.addWidget(scroll)
+        
+        self._tab_widget.addTab(tab, "⚙️ 系統設定")
+    
+    def _setup_log_tab(self) -> None:
+        """建立日誌分頁"""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(16, 16, 16, 16)
+        
+        self._setup_log_group(layout)
+        
+        self._tab_widget.addTab(tab, "📝 運行日誌")
     
     def _setup_engine_group(self, parent_layout: QVBoxLayout) -> None:
         """建立 OCR 引擎設定群組"""
-        engine_group = QGroupBox("OCR 引擎設定")
-        engine_layout = QVBoxLayout(engine_group)
+        self._engine_group = QGroupBox("OCR 引擎設定")
+        engine_layout = QVBoxLayout(self._engine_group)
         engine_layout.setSpacing(12)
         
         # 引擎類型選擇
-        self._engine_button_group = QButtonGroup(engine_group)
+        self._engine_button_group = QButtonGroup(self._engine_group)
         
         # GLM-OCR Cloud 選項
         cloud_layout = QVBoxLayout()
@@ -139,12 +193,12 @@ class MainWindow(QMainWindow):
         engine_layout.addLayout(cloud_layout)
         engine_layout.addLayout(local_layout)
         
-        parent_layout.addWidget(engine_group)
+        parent_layout.addWidget(self._engine_group)
     
     def _setup_folder_group(self, parent_layout: QVBoxLayout) -> None:
         """建立資料夾設定群組"""
-        folder_group = QGroupBox("資料夾設定")
-        folder_layout = QVBoxLayout(folder_group)
+        self._folder_group = QGroupBox("資料夾設定")
+        folder_layout = QVBoxLayout(self._folder_group)
         folder_layout.setSpacing(12)
         
         # 輸入資料夾
@@ -162,18 +216,18 @@ class MainWindow(QMainWindow):
         folder_layout.addWidget(self._input_folder_selector)
         folder_layout.addWidget(self._output_folder_selector)
         
-        parent_layout.addWidget(folder_group)
+        parent_layout.addWidget(self._folder_group)
     
     def _setup_output_group(self, parent_layout: QVBoxLayout) -> None:
         """建立輸出與後處理設定群組"""
-        output_group = QGroupBox("輸出與後處理")
-        output_layout = QVBoxLayout(output_group)
+        self._output_group = QGroupBox("輸出與後處理")
+        output_layout = QVBoxLayout(self._output_group)
         output_layout.setSpacing(12)
         
         # 輸出格式
         format_label = QLabel("輸出格式:")
         format_layout = QHBoxLayout()
-        self._format_button_group = QButtonGroup(output_group)
+        self._format_button_group = QButtonGroup(self._output_group)
         
         self._pdf_radio = QRadioButton("Searchable PDF")
         self._pdf_radio.setChecked(True)
@@ -190,7 +244,7 @@ class MainWindow(QMainWindow):
         # 後處理選項
         postprocess_label = QLabel("後處理:")
         postprocess_layout = QHBoxLayout()
-        self._postprocess_button_group = QButtonGroup(output_group)
+        self._postprocess_button_group = QButtonGroup(self._output_group)
         
         self._post_none_radio = QRadioButton("無")
         self._post_delete_radio = QRadioButton("刪除原檔")
@@ -220,7 +274,7 @@ class MainWindow(QMainWindow):
         # 連接後處理選項變更
         self._postprocess_button_group.idClicked.connect(self._on_postprocess_changed)
         
-        parent_layout.addWidget(output_group)
+        parent_layout.addWidget(self._output_group)
         
         # 初始設定備份資料夾可見性
         self._on_postprocess_changed(self._postprocess_button_group.checkedId())
@@ -264,8 +318,10 @@ class MainWindow(QMainWindow):
     
     def _connect_signals(self) -> None:
         """連接訊號與槽"""
-        # 引擎選擇變更
+        # 引擎與格式選擇變更時儲存設定
         self._engine_button_group.idClicked.connect(self._on_engine_changed)
+        self._format_button_group.idClicked.connect(lambda _: self._save_settings())
+        self._api_key_input.textChanged.connect(lambda _: self._save_settings())
         
         # 按鈕點擊
         self._start_button.clicked.connect(self.start_monitoring)
@@ -634,18 +690,26 @@ class MainWindow(QMainWindow):
         Args:
             enabled: 是否啟用
         """
-        # 引擎設定
-        self._cloud_radio.setEnabled(enabled)
-        self._local_radio.setEnabled(enabled)
-        self._api_key_input.setEnabled(enabled and self._cloud_radio.isChecked())
-        self._model_path_selector.set_enabled(enabled and self._local_radio.isChecked())
+        # 1. 先切換群組容器的啟用狀態（影響視覺灰化與防止交互）
+        self._engine_group.setEnabled(enabled)
+        self._folder_group.setEnabled(enabled)
+        self._output_group.setEnabled(enabled)
         
-        # 資料夾設定
+        # 2. 逐個處理內部控制項的細節（解決 Bug1: 確保狀態恢復完整性）
+        # 即使群組被禁用，明確設定子元件狀態可防止在重新啟用時出現邏輯不一致
+        is_cloud = self._cloud_radio.isChecked()
+        self._api_key_input.setEnabled(enabled and is_cloud)
+        self._model_path_selector.set_enabled(enabled and not is_cloud)
+        
         self._input_folder_selector.set_enabled(enabled)
         self._output_folder_selector.set_enabled(enabled)
-        self._backup_folder_selector.set_enabled(enabled)
         
-        # 輸出設定
+        is_move = self._post_move_radio.isChecked()
+        self._backup_folder_selector.set_enabled(enabled and is_move)
+        
+        # 其他單選按鈕
+        self._cloud_radio.setEnabled(enabled)
+        self._local_radio.setEnabled(enabled)
         self._pdf_radio.setEnabled(enabled)
         self._txt_radio.setEnabled(enabled)
         self._post_none_radio.setEnabled(enabled)

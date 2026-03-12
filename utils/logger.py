@@ -4,6 +4,7 @@
 提供可配置的日誌系統，支援檔案與控制台輸出。
 """
 
+import io
 import logging
 import sys
 import threading
@@ -11,6 +12,28 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional
+
+
+def _ensure_utf8_stdout() -> None:
+    """
+    確保 stdout 使用 UTF-8 編碼
+
+    在 Windows 上，終端機預設可能使用系統編碼（如 cp950），
+    這會導致中文輸出變成亂碼。此函數會重新配置 stdout 為 UTF-8。
+    """
+    if sys.platform == "win32":
+        try:
+            # 嘗試重新配置 stdout 為 UTF-8
+            if hasattr(sys.stdout, 'reconfigure'):
+                sys.stdout.reconfigure(encoding='utf-8')
+            if hasattr(sys.stderr, 'reconfigure'):
+                sys.stderr.reconfigure(encoding='utf-8')
+        except Exception:
+            # 如果重新配置失敗，使用包裝器
+            if sys.stdout and not isinstance(sys.stdout, io.TextIOWrapper):
+                sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+            if sys.stderr and not isinstance(sys.stderr, io.TextIOWrapper):
+                sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # 執行緒鎖，確保日誌初始化的執行緒安全
 _logger_lock = threading.Lock()
@@ -91,6 +114,9 @@ class LoggerManager:
             # 如果已經初始化過，直接返回
             if name in _initialized_loggers:
                 return _initialized_loggers[name]
+
+            # 確保控制台使用 UTF-8 編碼（解決 Windows 終端機亂碼問題）
+            _ensure_utf8_stdout()
 
             # 建立日誌記錄器
             logger = logging.getLogger(name)

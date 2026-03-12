@@ -43,8 +43,18 @@ QGroupBox::title {
     font-size: 14px;
 }
 
+QGroupBox::title:disabled {
+    color: #a0a0a0;
+    background-color: #f9f9f9;
+}
+
 QGroupBox:hover {
     border-color: #0078d4;
+}
+
+QGroupBox:disabled {
+    background-color: #f9f9f9;
+    border-color: #e0e0e0;
 }
 
 /* ========================================
@@ -126,13 +136,24 @@ QPushButton#browseButton:hover {
 
 QRadioButton {
     spacing: 8px;
-    padding: 4px;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+QRadioButton:hover {
+    background-color: #f0f0f0;
+}
+
+QRadioButton:checked {
+    background-color: #eaf3fb;
+    color: #0078d4;
+    font-weight: 600;
 }
 
 QRadioButton::indicator {
     width: 18px;
     height: 18px;
-    border-radius: 9px;
+    border-radius: 11px;
     border: 2px solid #8a8a8a;
     background-color: white;
 }
@@ -142,12 +163,14 @@ QRadioButton::indicator:hover {
 }
 
 QRadioButton::indicator:checked {
-    border-color: #0078d4;
+    border: 2px solid #0078d4;
     background-color: white;
 }
 
-QRadioButton::indicator:checked::after {
+/* 使用內鑲邊框模擬圓點 */
+QRadioButton::indicator:checked {
     background-color: #0078d4;
+    border: 5px solid white;
 }
 
 /* ========================================
@@ -156,13 +179,24 @@ QRadioButton::indicator:checked::after {
 
 QCheckBox {
     spacing: 8px;
-    padding: 4px;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+QCheckBox:hover {
+    background-color: #f0f0f0;
+}
+
+QCheckBox:checked {
+    background-color: #eaf3fb;
+    color: #0078d4;
+    font-weight: 600;
 }
 
 QCheckBox::indicator {
     width: 18px;
     height: 18px;
-    border-radius: 3px;
+    border-radius: 4px;
     border: 2px solid #8a8a8a;
     background-color: white;
 }
@@ -174,6 +208,7 @@ QCheckBox::indicator:hover {
 QCheckBox::indicator:checked {
     border-color: #0078d4;
     background-color: #0078d4;
+    /* 這裡可以放打勾圖片，若無圖片則以背景色區分 */
 }
 
 /* ========================================
@@ -239,6 +274,36 @@ QProgressBar {
 QProgressBar::chunk {
     background-color: #0078d4;
     border-radius: 4px;
+}
+
+/* ========================================
+   分頁元件 (QTabWidget)
+   ======================================== */
+
+QTabWidget::pane {
+    border-top: 1px solid #d1d1d1;
+    background-color: #f3f3f3;
+}
+
+QTabBar::tab {
+    background-color: #f3f3f3;
+    border: none;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #616161;
+}
+
+QTabBar::tab:hover {
+    background-color: #e0e0e0;
+    color: #1a1a1a;
+}
+
+QTabBar::tab:selected {
+    background-color: #ffffff;
+    color: #0078d4;
+    font-weight: 600;
+    border-bottom: 3px solid #0078d4;
 }
 
 /* ========================================
