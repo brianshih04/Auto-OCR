@@ -269,10 +269,9 @@ class TaskWorker(QThread):
             # 取得字體路徑（用於 PDF）
             font_path = None
             if output_format == "pdf":
-                font_path = PathAdapter.get_fonts_path() / "NotoSansCJK.ttf"
-                if not font_path.exists():
-                    font_path = None
-                    self._log("WARNING", "中文字體檔案不存在，將使用預設字體")
+                font_path = PathAdapter.get_default_font_path()
+                if font_path is None:
+                    self._log("WARNING", "找不到中文字體檔案，將使用預設字體")
             
             # 建立轉換器
             converter = ConverterFactory.create(output_format, font_path)

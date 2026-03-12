@@ -163,6 +163,8 @@ class LlamaCppEngine(BaseOCREngine):
             
         except Exception as e:
             error_msg = f"OCR 辨識發生錯誤: {e}"
+            if "chat_handler" in str(e).lower() or "vision" in str(e).lower():
+                error_msg += " (提示：本地 OCR 需要支援視覺的模型與對應的 CLIP 模型，請確保您的 GGUF 模型支援視覺推論。)"
             logger.exception(error_msg)
             return OCRResult(
                 text="",

@@ -45,7 +45,14 @@ class PDFConverter(BaseConverter):
         
         try:
             if self._font_path and self._font_path.exists():
-                pdfmetrics.registerFont(TTFont(self._font_name, str(self._font_path)))
+                suffix = self._font_path.suffix.lower()
+                if suffix == ".ttc":
+                    # TTC 檔案可能包含多個字體，ReportLab 需要特別處理
+                    # 這裡簡化處理，僅嘗試註冊
+                    pdfmetrics.registerFont(TTFont(self._font_name, str(self._font_path)))
+                else:
+                    pdfmetrics.registerFont(TTFont(self._font_name, str(self._font_path)))
+                
                 logger.info(f"已註冊字體: {self._font_path}")
                 self._initialized = True
                 return True

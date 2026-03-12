@@ -9,7 +9,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from threading import Lock
+from threading import Lock, RLock
 from typing import Any, Dict, Optional
 
 from .schema import AppConfig
@@ -56,7 +56,7 @@ class ConfigManager:
 
         self._config_path = config_path or Path("config.json")
         self._config: Optional[AppConfig] = None
-        self._config_lock = Lock()
+        self._config_lock = RLock()
         self._initialized = True
 
         logger.info(f"ConfigManager 初始化，配置檔案路徑: {self._config_path}")
