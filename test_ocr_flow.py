@@ -84,16 +84,22 @@ def test_full_flow():
     
     # 5. 轉換輸出
     print("\n[步驟 5] 轉換輸出...")
-    converter = ConverterFactory.create(config.output.format, config)
+    #取得字體路徑
+    font_path = None
+    if config.output.pdf_settings and config.output.pdf_settings.font_path:
+        font_path = Path(config.output.pdf_settings.font_path)
+    
+    converter = ConverterFactory.create(config.output.format, font_path)
     if not converter:
         print(f"  ✗ 建立轉換器失敗: {config.output.format}")
         return False
     
     output_path = output_folder / f"{test_image.stem}.{config.output.format}"
-    if converter.convert(result.text, output_path, test_image.stem):
+    convert_result = converter.convert(test_image, result.text, output_path)
+    if convert_result.success:
         print(f"  ✓ 輸出已儲存: {output_path}")
     else:
-        print(f"  ✗ 輸出失敗")
+        print(f"  ✗ 輸出失敗: {convert_result.error}")
         return False
     
     # 6. 檢查輸出檔案

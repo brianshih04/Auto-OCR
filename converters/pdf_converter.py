@@ -8,11 +8,8 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+import fitz  # PyMuPDF
 from PIL import Image
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 
 from .base import BaseConverter, ConversionResult
 
@@ -27,47 +24,15 @@ class PDFConverter(BaseConverter):
         初始化 PDF 轉換器
         
         Args:
-            font_path: 中文字體路徑（可選）
+            font_path: 中文字體路徑（可選，用於文字層）
         """
         self._font_path = font_path
-        self._font_name = "ChineseFont"
-        self._initialized = False
-    
-    def _initialize_font(self) -> bool:
-        """
-        初始化中文字體
-        
-        Returns:
-            bool: 初始化是否成功
-        """
-        if self._initialized:
-            return True
-        
-        try:
-            if self._font_path and self._font_path.exists():
-                suffix = self._font_path.suffix.lower()
-                if suffix == ".ttc":
-                    # TTC 檔案可能包含多個字體，ReportLab 需要特別處理
-                    # 這裡簡化處理，僅嘗試註冊
-                    pdfmetrics.registerFont(TTFont(self._font_name, str(self._font_path)))
-                else:
-                    pdfmetrics.registerFont(TTFont(self._font_name, str(self._font_path)))
-                
-                logger.info(f"已註冊字體: {self._font_path}")
-                self._initialized = True
-                return True
-        except Exception as e:
-            logger.warning(f"註冊字體失敗: {e}")
-        
-        # 使用預設字體
-        self._font_name = "Helvetica"
-        self._initialized = True
-        logger.info("使用預設字體: Helvetica")
-        return True
     
     def convert(self, image_path: Path, ocr_text: str, output_path: Path) -> ConversionResult:
         """
         將 OCR 結果轉換為 Searchable PDF 格式
+        
+        使用 PyMuPDF 建立包含圖片和可搜尋文字層的 PDF。
         
         Args:
             image_path: 原始圖片路徑
@@ -78,59 +43,78 @@ class PDFConverter(BaseConverter):
             ConversionResult: 轉換結果
         """
         try:
-            # 初始化字體
-            self._initialize_font()
-            
             # 確保輸出目錄存在
             output_path.parent.mkdir(parents=True, exist_ok=True)
             
-            # 獲取圖片尺寸
+            # 開啟圖片並獲取尺寸
             with Image.open(image_path) as img:
                 img_width, img_height = img.size
                 # 轉換為 RGB 模式（如果需要）
                 if img.mode in ('RGBA', 'P'):
                     img = img.convert('RGB')
+                    # 儲存臨時 RGB 圖片
+                    temp_img_path = output_path.parent / f"_temp_{output_path.stem}.jpg"
+                    img.save(temp_img_path, "JPEG", quality=95)
+                    image_to_use = str(temp_img_path)
+                else:
+                    image_to_use = str(image_path)
             
             # 建立 PDF
-            c = canvas.Canvas(str(output_path), pagesize=A4)
-            page_width, page_height = A4
+            doc = fitz.open()
             
-            # 計算圖片縮放比例（保持比例，留邊距）
-            margin = 0.5 * 72  # 0.5 inch 邊距
-            available_width = page_width - 2 * margin
-            available_height = page_height - 2 * margin
+            # 建立頁面（使用圖片尺寸）
+            page = doc.new_page(width=img_width, height=img_height)
             
-            scale = min(available_width / img_width, available_height / img_height)
-            scaled_width = img_width * scale
-            scaled_height = img_height * scale
-            
-            # 計算置中位置
-            x = (page_width - scaled_width) / 2
-            y = (page_height - scaled_height) / 2
-            
-            # 繪製圖片
-            c.drawImage(
-                str(image_path),
-                x, y,
-                scaled_width, scaled_height,
-                preserveAspectRatio=True
+            # 插入圖片作為頁面背景
+            page.insert_image(
+                fitz.Rect(0, 0, img_width, img_height),
+                filename=image_to_use
             )
             
-            # 在圖片上繪製透明文字層（用於搜尋）
-            c.saveState()
-            c.setFont(self._font_name, 1)  # 極小字體
-            c.setFillColorRGB(1, 1, 1, alpha=0)  # 完全透明
+            # 在頁面上插入可搜尋的文字層
+            # 使用透明文字（但仍然可被搜尋和複製）
+            if ocr_text.strip():
+                # 設定文字樣式
+                text_point = fitz.Point(10, img_height - 10)  # 左下角位置
+                
+                # 插入文字（使用極小字體和透明色）
+                # 注意：這裡的文字會被放在頁面上，可以被搜尋
+                shape = page.new_shape()
+                
+                # 將文字分段處理，避免過長
+                lines = self._split_text_to_lines(ocr_text, max_chars=200)
+                
+                # 計算文字起始位置（從頁面底部開始）
+                font_size = 2  # 極小字體
+                line_height = font_size + 1
+                start_y = img_height - 20
+                
+                for i, line in enumerate(lines[:50]):  # 限制最多50行
+                    y_pos = start_y - (i * line_height)
+                    if y_pos < 20:  # 避免超出頁面頂部
+                        break
+                    
+                    # 插入透明文字
+                    shape.insert_text(
+                        fitz.Point(10, y_pos),
+                        line,
+                        fontsize=font_size,
+                        color=(1, 1, 1),  # 白色文字（在白色背景上不可見）
+                        render_mode=3  # 不可見模式，但仍然可搜尋
+                    )
+                
+                shape.commit()
             
-            # 將 OCR 文字分散在頁面上（不可見但可搜尋）
-            # 限制文字長度以避免 PDF 過大
-            searchable_text = ocr_text[:5000] if len(ocr_text) > 5000 else ocr_text
+            # 儲存 PDF
+            doc.save(str(output_path), garbage=4, deflate=True)
+            doc.close()
             
-            # 將文字放在頁面底部區域
-            text_y = margin
-            c.drawString(margin, text_y, searchable_text)
-            
-            c.restoreState()
-            c.save()
+            # 清理臨時檔案
+            if 'temp_img_path' in locals():
+                try:
+                    Path(image_to_use).unlink()
+                except:
+                    pass
             
             logger.info(f"Searchable PDF 已生成: {output_path}")
             return ConversionResult(success=True, output_path=output_path)
@@ -139,3 +123,28 @@ class PDFConverter(BaseConverter):
             error_msg = f"生成 PDF 失敗: {str(e)}"
             logger.error(error_msg)
             return ConversionResult(success=False, error=error_msg)
+    
+    def _split_text_to_lines(self, text: str, max_chars: int = 200) -> list:
+        """
+        將文字分割成多行
+        
+        Args:
+            text: 原始文字
+            max_chars: 每行最大字元數
+            
+        Returns:
+            list: 分割後的行列表
+        """
+        lines = []
+        current_line = ""
+        
+        for char in text:
+            current_line += char
+            if len(current_line) >= max_chars:
+                lines.append(current_line)
+                current_line = ""
+        
+        if current_line:
+            lines.append(current_line)
+        
+        return lines

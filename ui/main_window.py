@@ -412,18 +412,6 @@ class MainWindow(QMainWindow):
         # 資料夾設定
         config.monitor.input_folder = self._input_folder_selector.path()
         config.monitor.output_folder = self._output_folder_selector.path()
-    
-    def _on_save_settings(self) -> None:
-        """儲存設定按鈕事件"""
-        self._save_settings()
-        self.config_manager.save()
-        self._log_group.append_info("設定已儲存")
-    
-    def _on_cancel_settings(self) -> None:
-        """取消設定按鈕事件 -重新載入原始設定"""
-        self._load_settings()
-        self._log_group.append_info("設定已還原")
-        config.postprocess.move_destination = self._backup_folder_selector.path()
         
         # 輸出格式
         config.output.format = "pdf" if self._pdf_radio.isChecked() else "txt"
@@ -437,10 +425,10 @@ class MainWindow(QMainWindow):
         else:
             config.postprocess.action = "move"
         
-        # 儲存到檔案
-        self.config_manager.save()
+        # 備份資料夾
+        config.postprocess.move_destination = self._backup_folder_selector.path()
         
-        logger.debug("設定已儲存")
+        logger.debug("設定已更新到記憶體")
     
     def _on_save_settings(self) -> None:
         """儲存設定按鈕事件"""

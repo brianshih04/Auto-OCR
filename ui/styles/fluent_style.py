@@ -84,16 +84,14 @@ QPushButton:disabled {
     color: #a0a0a0;
 }
 
-/* 主要按鈕（大型啟動按鈕） */
+/* 主要按鈕 */
 QPushButton#primaryButton {
     background-color: #0078d4;
     color: white;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
-    padding: 16px 48px;
-    border-radius: 8px;
-    min-width: 200px;
-    min-height: 48px;
+    padding: 8px 16px;
+    border-radius: 6px;
 }
 
 QPushButton#primaryButton:hover {
