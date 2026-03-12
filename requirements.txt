@@ -1,0 +1,30 @@
+# Auto-OCR 依賴套件
+# GUI 框架
+PyQt6>=6.5.0
+
+# 檔案監控
+watchdog>=3.0.0
+
+# 圖片處理
+Pillow>=10.0.0
+
+# PDF 生成
+reportlab>=4.0.0
+
+# PDF 處理
+PyMuPDF>=1.23.0
+
+# 本地模型推論
+llama-cpp-python>=0.2.0
+
+# HTTP 請求
+requests>=2.31.0
+
+# 檔案後處理（移至資源回收桶）
+send2trash>=1.8.0
+
+# 可選：高效能 JPEG 處理
+# pyjpeg-turbo>=1.6.0
+
+# 配置驗證
+pydantic>=2.0.0

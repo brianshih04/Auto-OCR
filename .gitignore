@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 專案特定
+config.json
+*.log
+logs/
+
+# 模型檔案
+*.gguf
+
+# 編譯輸出
+dist/
+build/
+*.egg-info/
