@@ -139,6 +139,27 @@ class MainWindow(QMainWindow):
         tab_layout.setContentsMargins(0, 0, 0, 0)
         tab_layout.addWidget(scroll)
         
+        # 儲存/取消按鈕區
+        button_container = QWidget()
+        button_layout = QHBoxLayout(button_container)
+        button_layout.setContentsMargins(16, 8, 16, 16)
+        button_layout.addStretch()
+        
+        self._save_settings_button = QPushButton("💾 儲存設定")
+        self._save_settings_button.setObjectName("primaryButton")
+        self._save_settings_button.setFixedSize(120, 36)
+        self._save_settings_button.clicked.connect(self._on_save_settings)
+        
+        self._cancel_settings_button = QPushButton("取消")
+        self._cancel_settings_button.setFixedSize(120, 36)
+        self._cancel_settings_button.clicked.connect(self._on_cancel_settings)
+        
+        button_layout.addWidget(self._save_settings_button)
+        button_layout.addWidget(self._cancel_settings_button)
+        button_layout.addStretch()
+        
+        tab_layout.addWidget(button_container)
+        
         self._tab_widget.addTab(tab, "⚙️ 系統設定")
     
     def _setup_log_tab(self) -> None:
@@ -290,11 +311,11 @@ class MainWindow(QMainWindow):
         
         self._start_button = QPushButton("啟動監控")
         self._start_button.setObjectName("primaryButton")
-        self._start_button.setFixedSize(200, 48)
+        self._start_button.setFixedSize(120, 36)
         
         self._stop_button = QPushButton("停止監控")
         self._stop_button.setObjectName("stopButton")
-        self._stop_button.setFixedSize(200, 48)
+        self._stop_button.setFixedSize(120, 36)
         self._stop_button.setVisible(False)
         
         button_layout.addWidget(self._start_button)
@@ -391,6 +412,17 @@ class MainWindow(QMainWindow):
         # 資料夾設定
         config.monitor.input_folder = self._input_folder_selector.path()
         config.monitor.output_folder = self._output_folder_selector.path()
+    
+    def _on_save_settings(self) -> None:
+        """儲存設定按鈕事件"""
+        self._save_settings()
+        self.config_manager.save()
+        self._log_group.append_info("設定已儲存")
+    
+    def _on_cancel_settings(self) -> None:
+        """取消設定按鈕事件 -重新載入原始設定"""
+        self._load_settings()
+        self._log_group.append_info("設定已還原")
         config.postprocess.move_destination = self._backup_folder_selector.path()
         
         # 輸出格式
@@ -410,6 +442,19 @@ class MainWindow(QMainWindow):
         
         logger.debug("設定已儲存")
     
+    def _on_save_settings(self) -> None:
+        """儲存設定按鈕事件"""
+        self._save_settings()
+        self.config_manager.save()
+        self._log_group.append_info("設定已儲存")
+        logger.info("設定已儲存到檔案")
+    
+    def _on_cancel_settings(self) -> None:
+        """取消設定按鈕事件"""
+        self._load_settings()
+        self._log_group.append_info("設定已還原")
+        logger.info("設定已還原")
+
     def _on_engine_changed(self, engine_id: int) -> None:
         """
         引擎選擇變更事件

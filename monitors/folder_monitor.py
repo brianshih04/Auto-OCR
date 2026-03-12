@@ -33,7 +33,7 @@ class ImageFileHandler(FileSystemEventHandler):
     繼承自 watchdog 的 FileSystemEventHandler，處理檔案建立事件。
     """
     
-    SUPPORTED_EXTENSIONS = {'.jpg', '.jpeg', '.bmp', '.tiff', '.tif'}
+    SUPPORTED_EXTENSIONS = {'.jpg', '.jpeg', '.bmp', '.tiff', '.tif', '.png'}
     
     def __init__(self, signal_emitter: FileEventSignal, debounce_delay: float = 0.5):
         """
@@ -182,6 +182,9 @@ class FolderMonitor(QThread):
             logger.info(f"開始監控資料夾: {self._watch_path}")
             self.started_monitoring.emit()
             
+            # 掃描現有檔案
+            self._scan_existing_files()
+            
             # 保持執行緒運行
             while self._is_running:
                 time.sleep(0.1)
@@ -213,6 +216,34 @@ class FolderMonitor(QThread):
         
         logger.info("監控已停止")
         self.stopped_monitoring.emit()
+    
+    def _scan_existing_files(self):
+        """掃描現有檔案並發出訊號"""
+        try:
+            logger.info(f"掃描現有檔案: {self._watch_path}")
+            existing_files = list(self._watch_path.glob("*"))
+            
+            for file_path in existing_files:
+                if not self._is_running:
+                    break
+                
+                if file_path.is_file() and file_path.suffix.lower() in self.SUPPORTED_EXTENSIONS:
+                    logger.info(f"發現現有圖片檔案: {file_path}")
+                    self.file_detected.emit(str(file_path))
+                    # 稍微延遲以避免 flooding
+                    time.sleep(0.1)
+            
+            logger.info("現有檔案掃描完成")
+            
+        except Exception as e:
+            error_msg = f"掃描現有檔案錯誤: {str(e)}"
+            logger.exception(error_msg)
+            self.error_occurred.emit(error_msg)
+    
+    @property
+    def SUPPORTED_EXTENSIONS(self):
+        """支援的圖片副檔名"""
+        return {'.jpg', '.jpeg', '.bmp', '.tiff', '.tif', '.png'}
     
     def _cleanup(self):
         """清理資源"""
